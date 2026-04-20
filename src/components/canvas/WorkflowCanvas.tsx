@@ -1,24 +1,36 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { ReactFlow, addEdge, Background, Controls, Connection, Edge, Node } from "@xyflow/react";
+import {
+  ReactFlow,
+  addEdge,
+  Background,
+  Controls,
+  Connection,
+  Edge,
+  Node,
+  useNodesState,
+  useEdgesState,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import { useWorkflow } from "@/hooks/useWorkflow";
-import { nodeTypes } from "./nodeTypes";
+import { nodeTypes } from "@/components/nodes/nodeTypes";
 import { WorkflowNode as WorkflowNodeType } from "@/lib/types/workflow";
 
 export default function WorkflowCanvas() {
   const { state, dispatch } = useWorkflow();
 
   // Convert WorkflowNode to React Flow Node
-  const rfNodes: Node[] = state.nodes.map((node: WorkflowNodeType) => ({
+  const rfNodes = state.nodes.map((node: WorkflowNodeType) => ({
     id: node.id,
     type: node.type,
-    data: node.data,
+    data: node.data as unknown as Record<string, unknown>,
     position: node.position || { x: 0, y: 0 },
     selected: node.id === state.selectedNodeId,
-  }));
+    draggable: true,
+    connectable: true,
+  })) as Node[];
 
   // Convert WorkflowEdge to React Flow Edge
   const rfEdges: Edge[] = state.edges.map((edge) => ({
@@ -29,30 +41,37 @@ export default function WorkflowCanvas() {
 
   const handleNodesChange = useCallback(
     (changes: any) => {
-      const updatedNodes = changes.reduce((nodes: WorkflowNodeType[], change: any) => {
+      let updatedNodes = [...state.nodes];
+      let hasPositionChange = false;
+
+      changes.forEach((change: any) => {
         if (change.type === "position" && change.position) {
-          return nodes.map((n) =>
-            n.id === change.nodeId ? { ...n, position: change.position } : n
+          updatedNodes = updatedNodes.map((n) =>
+            n.id === change.nodeId ? { ...n, position: change.position } : n,
           );
+          hasPositionChange = true;
         }
         if (change.type === "select") {
-          dispatch({ type: "SELECT_NODE", payload: change.selected ? change.nodeId : null });
+          dispatch({
+            type: "SELECT_NODE",
+            payload: change.selected ? change.nodeId : null,
+          });
         }
-        return nodes;
-      }, state.nodes);
+      });
 
-      if (updatedNodes !== state.nodes) {
+      if (hasPositionChange) {
         dispatch({ type: "SET_NODES", payload: updatedNodes });
       }
     },
-    [state.nodes, dispatch]
+    [state.nodes, dispatch],
   );
 
   const handleEdgesChange = useCallback(
     (changes: any) => {
       const updatedEdges = state.edges.filter((edge) => {
         const change = changes.find(
-          (c: any) => c.type === "remove" && c.id === `${edge.source}-${edge.target}`
+          (c: any) =>
+            c.type === "remove" && c.id === `${edge.source}-${edge.target}`,
         );
         return !change;
       });
@@ -61,7 +80,7 @@ export default function WorkflowCanvas() {
         dispatch({ type: "SET_EDGES", payload: updatedEdges });
       }
     },
-    [state.edges, dispatch]
+    [state.edges, dispatch],
   );
 
   const handleConnect = useCallback(
@@ -78,14 +97,14 @@ export default function WorkflowCanvas() {
         });
       }
     },
-    [state.edges, dispatch]
+    [state.edges, dispatch],
   );
 
   const handleNodeClick = useCallback(
     (_event: any, node: Node) => {
       dispatch({ type: "SELECT_NODE", payload: node.id });
     },
-    [dispatch]
+    [dispatch],
   );
 
   return (
@@ -100,7 +119,12 @@ export default function WorkflowCanvas() {
         onNodeClick={handleNodeClick}
         fitView
       >
-        <Background />
+        <Background
+          color="#e2e8f0"
+          gap={20}
+          size={0.5}
+          style={{ backgroundColor: "rgba(248, 250, 252, 0.5)" }}
+        />
         <Controls />
       </ReactFlow>
     </div>

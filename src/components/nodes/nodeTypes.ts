@@ -1,3 +1,13 @@
-// Note: This will be populated in Phase 3 with actual node components
-// For now, it exports an empty object to avoid errors
-export const nodeTypes: Record<string, any> = {};
+import StartNode from "./StartNode";
+import TaskNode from "./TaskNode";
+import ApprovalNode from "./ApprovalNode";
+import AutomatedNode from "./AutomatedNode";
+import EndNode from "./EndNode";
+
+export const nodeTypes = {
+  start: StartNode,
+  task: TaskNode,
+  approval: ApprovalNode,
+  automated: AutomatedNode,
+  end: EndNode,
+};
